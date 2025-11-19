@@ -216,6 +216,35 @@ def teacher_dashboard():
         courses=course_data
     )
 
+# ========== TEACHER COURSES ==========
+
+@app.route('/professor/course/<int:course_id>')
+def view_course(course_id):
+    if 'user_id' not in session or session.get('role') != 'teacher':
+        return redirect(url_for('teacher_login'))
+
+    teacher_id = session['user_id']
+    course = Course.query.get_or_404(course_id)
+
+    # Make sure this teacher owns the course
+    if course.teacher_id != teacher_id:
+        return "Unauthorized", 403
+
+    # Get students enrolled in this course
+    enrollments = Enrollment.query.filter_by(course_id=course_id).join(Student).all()
+    student_data = []
+    for enrollment in enrollments:
+        student_data.append({
+            'id': enrollment.student.id,
+            'name': enrollment.student.name,
+            'grade': enrollment.grade
+        })
+
+    return render_template(
+        'professor_course.html',
+        course=course,
+        students=student_data
+    )
 
 @app.route('/admin/dashboard')
 def admin_dashboard():
@@ -277,6 +306,29 @@ def student_register():
     return render_template('student_register.html', courses=course_data)
 
 # ========== API ENDPOINTS ==========
+
+# allows the front end javascript to update grades in the teacher.js function
+@app.route('/api/course/<int:course_id>/student/<int:student_id>/grade', methods=['PUT'])
+def update_grade(course_id, student_id):
+    if 'user_id' not in session or session.get('role') != 'teacher':
+        return jsonify({'error': 'Not logged in'}), 401
+
+    course = Course.query.get_or_404(course_id)
+
+    if course.teacher_id != session['user_id']:
+        return jsonify({'error': 'Unauthorized'}), 403
+
+    data = request.json
+    grade = data.get('grade')
+
+    enrollment = Enrollment.query.filter_by(course_id=course_id, student_id=student_id).first()
+    if not enrollment:
+        return jsonify({'error': 'Enrollment not found'}), 404
+
+    enrollment.grade = grade
+    db.session.commit()
+
+    return jsonify({'message': 'Grade updated successfully'})
 
 @app.route('/api/student/register', methods=['POST'])
 def api_student_register():
