@@ -182,35 +182,40 @@ def student_dashboard():
 
 @app.route('/teacher/dashboard')
 def teacher_dashboard():
-    """Teacher dashboard using your professor_dashboard.html"""
+    """Teacher dashboard using professor_dashboard.html"""
     # Check if user is logged in as teacher
     if 'user_id' not in session or session.get('role') != 'teacher':
         return redirect(url_for('teacher_login'))
-    
+
     teacher_id = session['user_id']
     teacher_name = session['user_name']
-    
+
     print(f"👨‍🏫 Loading dashboard for teacher: {teacher_name} (ID: {teacher_id})")
-    
+
     # Get courses taught by this teacher
     courses = Course.query.filter_by(teacher_id=teacher_id).all()
-    
+
+    # Build course data list
     course_data = []
     for course in courses:
-        # Count students enrolled in each course
         enrollment_count = Enrollment.query.filter_by(course_id=course.id).count()
+
         course_data.append({
             'id': course.id,
             'name': course.name,
+            'teacher_name': teacher_name,  # Show the professor name
             'enrollment_count': enrollment_count,
             'capacity': course.capacity
         })
-    
+
     print(f"📖 Teacher has {len(course_data)} courses")
-    
-    return render_template('professor_dashboard.html', 
-                         teacher_name=teacher_name,
-                         courses=course_data)
+
+    return render_template(
+        'professor_dashboard.html',
+        professor_name=teacher_name,
+        courses=course_data
+    )
+
 
 @app.route('/admin/dashboard')
 def admin_dashboard():

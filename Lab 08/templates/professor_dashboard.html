@@ -9,30 +9,35 @@
 <body>
 <div class="container mt-5">
     <h2>Professor Dashboard</h2>
-    <p>Welcome, </p>
+    <p>Welcome, {{ professor_name }}</p>
 
     <h3 class="mt-4">Courses You Teach</h3>
 
-  <table class="table table-striped" id="enrolledTable">
+  <table class="table table-striped">
     <thead>
-      <tr>
-        <th>Class</th>
-        <th>Professor</th>
-        <th>Credits</th>
-        <th>Grade</th>
-      </tr>
+        <tr>
+            <th>Course Name</th>
+            <th>Teacher</th>
+            <th>Students Enrolled</th>
+            <th>View Course</th>
+        </tr>
     </thead>
     <tbody>
-      {% for course in courses %}
-      <tr>
-        <td>{{ course.name }}</td>
-        <td>{{ course.professor }}</td>
-        <td>{{ course.credits }}</td>
-        <td>{{ course.grade if course.grade else 'Not graded' }}</td>
-      </tr>
-      {% endfor %}
+        {% for course in courses %}
+        <tr>
+            <td>{{ course.name }}</td>
+            <td>{{ course.teacher_name }}</td>
+            <td>{{ course.enrollment_count }}</td>
+            <td>
+                <a href="/professor/course/{{ course.id }}" class="btn btn-primary btn-sm">
+                    View Course
+                </a>
+            </td>
+        </tr>
+        {% endfor %}
     </tbody>
-  </table>
+</table>
+
 
         <button onclick="logoutTeacher()" class="btn btn-secondary">Logout</button>
 
