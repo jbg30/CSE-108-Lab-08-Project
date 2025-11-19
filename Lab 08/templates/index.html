@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grades Website</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+</head>
+<body>
+    <h1>Grades Index</h1>
+
+    <div class="section">
+        <h2>Get Student Grade</h2>
+        <input type="text" id="studentName" placeholder="Enter student name">
+        <button onclick="getGrade()">Get Grade</button>
+        <p id="singleResult"></p>
+    </div>
+
+    <div class="section">
+    <h2>All Students</h2>
+    <button onclick="getAllGrades()">Refresh List</button>
+    <table id="gradesTable">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Grade</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+        </tbody>
+    </table>
+    </div>
+
+    <div class="section">
+        <p id="message"></p>
+    </div>
+
+    <div class="section">
+        <h2>Add New Student</h2>
+        <input type="text" id="newName" placeholder="Student Name">
+        <input type="number" id="newGrade" placeholder="Grade">
+        <button onclick="addGrade()">Add Student</button>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

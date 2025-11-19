@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Student Dashboard</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+<div class="container mt-5">
+  <h2>Student Dashboard</h2>
+  {% if student_name %}
+    <div class="alert alert-info">Welcome, {{ student_name }}!</div>
+  {% endif %}
+  
+  <div id="studentDashboardMsg" class="message"></div>
+
+  <h3>Your Classes</h3>
+  <table class="table table-striped" id="enrolledTable">
+    <thead>
+      <tr>
+        <th>Class</th>
+        <th>Professor</th>
+        <th>Credits</th>
+        <th>Grade</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for course in courses %}
+      <tr>
+        <td>{{ course.name }}</td>
+        <td>{{ course.professor }}</td>
+        <td>{{ course.credits }}</td>
+        <td>{{ course.grade if course.grade else 'Not graded' }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <button id="registerClassesBtn" class="btn btn-primary">Register for Classes</button>
+  <button onclick="logoutStudent()" class="btn btn-secondary">Logout</button>
+</div>
+
+<script>
+  // Pass student name to JavaScript
+  const studentName = "{{ student_name }}";
+</script>
+<script src="/static/js/student.js"></script>
+</body>
+</html>
