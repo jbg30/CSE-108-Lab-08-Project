@@ -22,7 +22,7 @@
     {% for student in students %}
     <tr>
       <td>{{ student.name }}</td>
-      <td>{{ student.grade if student.grade else 'Not graded' }}</td>
+      <td>{{ student.grade or 'Not graded' }}</td>
       <td>
         <input type="number" id="grade-{{ student.id }}" value="{{ student.grade or '' }}" style="width: 80px;">
         <button class="btn btn-sm btn-success" onclick="updateGrade({{ course.id }}, {{ student.id }})">Save</button>

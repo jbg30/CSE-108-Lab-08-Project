@@ -2,7 +2,6 @@ function logoutTeacher() {
   window.location.href = '/logout';
 }
 
-
 // Enters grade and saves, then requests backend to update (flask API)
 async function updateGrade(courseId, studentId) {
   const gradeInput = document.getElementById(`grade-${studentId}`);
@@ -17,13 +16,13 @@ async function updateGrade(courseId, studentId) {
 
     const data = await response.json();
     if (response.ok) {
-      alert('✅ Grade updated successfully!');
+      alert('Grade updated successfully!');
     } else {
-      alert(`❌ ${data.error}`);
+      alert(`${data.error}`);
     }
   } catch (err) {
     console.error(err);
-    alert('❌ Error updating grade');
+    alert('Error updating grade');
   }
 }
 

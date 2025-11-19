@@ -12,21 +12,19 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db.init_app(app)
 setup_admin(app)
 
-# ========== AUTHENTICATION ROUTES ==========
+# AUTHENTICATION ROUTES (student, teacher, admin logins)
 
 @app.route('/')
 def index():
-    """Home page redirects to student login"""
     return redirect(url_for('student_login'))
 
 @app.route('/student/login', methods=['GET', 'POST'])
 def student_login():
-    """Student login using your student_login.html"""
     if request.method == 'POST':
         email = request.form.get('studentLoginEmail')
         password = request.form.get('studentLoginPassword')
         
-        print(f"🔐 Student login attempt: {email}")
+        print(f"Student login attempt: {email}")
         
         student = Student.query.filter_by(email=email).first()
         
@@ -36,22 +34,21 @@ def student_login():
             session['user_email'] = student.email
             session['user_name'] = student.name
             session['role'] = 'student'
-            print(f"✅ Student login successful: {student.name}")
+            print(f"Student login successful: {student.name}")
             return redirect(url_for('student_dashboard'))
         else:
-            print("❌ Student login failed")
+            print("Student login failed")
             return render_template('student_login.html', error="Invalid email or password")
     
     return render_template('student_login.html')
 
 @app.route('/teacher/login', methods=['GET', 'POST'])
 def teacher_login():
-    """Teacher login using your professor_login.html"""
     if request.method == 'POST':
         email = request.form.get('username')
         password = request.form.get('password')
         
-        print(f"🔐 Teacher login attempt: {email}")
+        print(f"Teacher login attempt: {email}")
         
         teacher = Teacher.query.filter_by(email=email).first()
         
@@ -60,22 +57,21 @@ def teacher_login():
             session['user_email'] = teacher.email
             session['user_name'] = teacher.name
             session['role'] = 'teacher'
-            print(f"✅ Teacher login successful: {teacher.name}")
+            print(f"Teacher login successful: {teacher.name}")
             return redirect(url_for('teacher_dashboard'))
         else:
-            print("❌ Teacher login failed")
+            print("Teacher login failed")
             return render_template('professor_login.html', error="Invalid email or password")
     
     return render_template('professor_login.html')
 
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
-    """Admin login using your admin_login.html"""
     if request.method == 'POST':
         username = request.form.get('username')
         password = request.form.get('password')
         
-        print(f"🔐 Admin login attempt: {username}")
+        print(f"Admin login attempt: {username}")
         
         admin = Admin.query.filter_by(username=username).first()
         
@@ -83,10 +79,10 @@ def admin_login():
             session['user_id'] = admin.id
             session['user_name'] = admin.username
             session['role'] = 'admin'
-            print(f"✅ Admin login successful: {admin.username}")
+            print(f"Admin login successful: {admin.username}")
             return redirect(url_for('admin_dashboard'))
         else:
-            print("❌ Admin login failed")
+            print("Admin login failed")
             return render_template('admin_login.html', error="Invalid username or password")
     
     return render_template('admin_login.html')
@@ -129,11 +125,10 @@ def admin_remove_student(enrollment_id):
     })
 
 
-# ========== DASHBOARD ROUTES ==========
+# DASHBOARD ROUTES
 
 @app.route('/student/dashboard')
 def student_dashboard():
-    """Student dashboard using your student_dashboard.html"""
     # Check if user is logged in as student
     if 'user_id' not in session or session.get('role') != 'student':
         return redirect(url_for('student_login'))
@@ -141,7 +136,7 @@ def student_dashboard():
     student_id = session['user_id']
     student_name = session['user_name']
     
-    print(f"🎓 Loading dashboard for student: {student_name} (ID: {student_id})")
+    print(f"Loading dashboard for student: {student_name} (ID: {student_id})")
     
     # Get student's enrolled courses
     enrollments = Enrollment.query.filter_by(student_id=student_id).join(Course).all()
@@ -155,7 +150,7 @@ def student_dashboard():
             'grade': enrollment.grade
         })
     
-    print(f"📚 Student has {len(enrolled_courses)} enrolled courses")
+    print(f"Student has {len(enrolled_courses)} enrolled courses")
     
     return render_template('student_dashboard.html', 
                          student_name=student_name,
@@ -163,7 +158,6 @@ def student_dashboard():
 
 @app.route('/teacher/dashboard')
 def teacher_dashboard():
-    """Teacher dashboard using professor_dashboard.html"""
     # Check if user is logged in as teacher
     if 'user_id' not in session or session.get('role') != 'teacher':
         return redirect(url_for('teacher_login'))
@@ -171,7 +165,7 @@ def teacher_dashboard():
     teacher_id = session['user_id']
     teacher_name = session['user_name']
 
-    print(f"👨‍🏫 Loading dashboard for teacher: {teacher_name} (ID: {teacher_id})")
+    print(f"Loading dashboard for teacher: {teacher_name} (ID: {teacher_id})")
 
     # Get courses taught by this teacher
     courses = Course.query.filter_by(teacher_id=teacher_id).all()
@@ -184,12 +178,12 @@ def teacher_dashboard():
         course_data.append({
             'id': course.id,
             'name': course.name,
-            'teacher_name': teacher_name,  # Show the professor name
+            'teacher_name': teacher_name,
             'enrollment_count': enrollment_count,
             'capacity': course.capacity
         })
 
-    print(f"📖 Teacher has {len(course_data)} courses")
+    print(f"Teacher has {len(course_data)} courses")
 
     return render_template(
         'professor_dashboard.html',
@@ -197,7 +191,7 @@ def teacher_dashboard():
         courses=course_data
     )
 
-# ========== TEACHER COURSES ==========
+# TEACHER COURSES
 
 @app.route('/professor/course/<int:course_id>')
 def view_course(course_id):
@@ -241,7 +235,6 @@ def admin_dashboard():
 
 @app.route("/admin/add", methods=["GET", "POST"])
 def admin_add_class():
-    """Form to add a new course (used by 'Add New Class' button)."""
     # Only admins can access this
     if "user_id" not in session or session.get("role") != "admin":
         return redirect(url_for("admin_login"))
@@ -278,7 +271,7 @@ def admin_add_class():
         db.session.add(new_course)
         db.session.commit()
 
-        print(f"✅ Admin added new class: {name}")
+        print(f"Admin added new class: {name}")
         return redirect(url_for("admin_dashboard"))
 
     # GET: show the form with list of teachers
@@ -287,7 +280,6 @@ def admin_add_class():
 
 @app.route('/student/register')
 def student_register():
-    """Class registration using your student_register.html"""
     # Check if user is logged in as student
     if 'user_id' not in session or session.get('role') != 'student':
         return redirect(url_for('student_login'))
@@ -295,7 +287,7 @@ def student_register():
     student_id = session['user_id']
     student_name = session['user_name']
     
-    print(f"📝 Loading registration page for student: {student_name} (ID: {student_id})")
+    print(f"Loading registration page for student: {student_name} (ID: {student_id})")
     
     # Get all available courses
     courses = Course.query.all()
@@ -311,7 +303,7 @@ def student_register():
             'capacity': course.capacity
         })
     
-    print(f"📚 Passing {len(course_data)} courses to registration page")
+    print(f"Passing {len(course_data)} courses to registration page")
     
     # Debug: print each course
     for course in course_data:
@@ -319,7 +311,7 @@ def student_register():
     
     return render_template('student_register.html', courses=course_data)
 
-# ========== API ENDPOINTS ==========
+# API ENDPOINTS
 
 # allows the front end javascript to update grades in the teacher.js function
 @app.route('/api/course/<int:course_id>/student/<int:student_id>/grade', methods=['PUT'])
@@ -346,7 +338,6 @@ def update_grade(course_id, student_id):
 
 @app.route('/api/student/register', methods=['POST'])
 def api_student_register():
-    """API endpoint for course registration (for your student.js)"""
     if 'user_id' not in session or session.get('role') != 'student':
         return jsonify({'error': 'Not logged in'}), 401
     
@@ -354,12 +345,12 @@ def api_student_register():
     student_name = session['user_name']
     course_id = request.json.get('courseId')
     
-    print(f"🎯 Student {student_name} (ID: {student_id}) attempting to enroll in course {course_id}")
+    print(f"Student {student_name} (ID: {student_id}) attempting to enroll in course {course_id}")
     
     # Check if course exists
     course = Course.query.get(course_id)
     if not course:
-        print(f"❌ Course {course_id} not found")
+        print(f"Course {course_id} not found")
         return jsonify({'error': 'Course not found'}), 404
     
     # Check if already enrolled
@@ -368,13 +359,13 @@ def api_student_register():
     ).first()
     
     if existing_enrollment:
-        print(f"❌ Student already enrolled in {course.name}")
+        print(f"Student already enrolled in {course.name}")
         return jsonify({'error': 'Already enrolled in this course'}), 400
     
     # Check course capacity
     enrollment_count = Enrollment.query.filter_by(course_id=course_id).count()
     if enrollment_count >= course.capacity:
-        print(f"❌ Course {course.name} is full ({enrollment_count}/{course.capacity})")
+        print(f"Course {course.name} is full ({enrollment_count}/{course.capacity})")
         return jsonify({'error': 'Course is full'}), 400
     
     # Create new enrollment
@@ -382,14 +373,13 @@ def api_student_register():
     db.session.add(new_enrollment)
     db.session.commit()
     
-    print(f"✅ Successfully enrolled {student_name} in {course.name}")
+    print(f"Successfully enrolled {student_name} in {course.name}")
     
     return jsonify({'message': 'Successfully enrolled in course'})
 
 # Grades API endpoints for your index.html and script.js
 @app.route('/api/grades', methods=['GET', 'POST'])
 def api_grades():
-    """Grades API for your script.js"""
     if request.method == 'GET':
         # Return all grades
         enrollments = Enrollment.query.filter(Enrollment.grade.isnot(None)).all()
@@ -398,7 +388,7 @@ def api_grades():
             student = Student.query.get(enrollment.student_id)
             grades[student.name] = enrollment.grade
         
-        print(f"📊 Returning {len(grades)} grades via API")
+        print(f"Returning {len(grades)} grades via API")
         return jsonify(grades)
     
     elif request.method == 'POST':
@@ -407,7 +397,7 @@ def api_grades():
         student_name = data.get('name')
         grade = data.get('grade')
         
-        print(f"📝 Adding grade {grade} for student {student_name}")
+        print(f"Adding grade {grade} for student {student_name}")
         
         # Find student by name
         student = Student.query.filter_by(name=student_name).first()
@@ -422,28 +412,28 @@ def api_grades():
             
             enrollment.grade = grade
             db.session.commit()
-            print(f"✅ Added grade {grade} for {student_name}")
+            print(f"Added grade {grade} for {student_name}")
             return jsonify({'message': 'Grade added successfully'})
         
-        print(f"❌ Student {student_name} not found")
+        print(f"Student {student_name} not found")
         return jsonify({'error': 'Student not found'}), 404
 
+# Individual student grade options
 @app.route('/api/grades/<student_name>', methods=['GET', 'PUT', 'DELETE'])
 def api_grade_student(student_name):
-    """Individual student grade operations for your script.js"""
-    print(f"📊 Grade operation for student: {student_name}")
+    print(f"Grade operation for student: {student_name}")
     
     student = Student.query.filter_by(name=student_name).first()
     if not student:
-        print(f"❌ Student {student_name} not found")
+        print(f"Student {student_name} not found")
         return jsonify({'error': 'Student not found'}), 404
     
     if request.method == 'GET':
         enrollment = Enrollment.query.filter_by(student_id=student.id).first()
         if enrollment and enrollment.grade:
-            print(f"✅ Found grade {enrollment.grade} for {student_name}")
+            print(f"Found grade {enrollment.grade} for {student_name}")
             return jsonify({student_name: enrollment.grade})
-        print(f"❌ No grade found for {student_name}")
+        print(f"No grade found for {student_name}")
         return jsonify({'error': 'Grade not found'}), 404
     
     elif request.method == 'PUT':
@@ -454,10 +444,10 @@ def api_grade_student(student_name):
         if enrollment:
             enrollment.grade = new_grade
             db.session.commit()
-            print(f"✅ Updated grade to {new_grade} for {student_name}")
+            print(f"Updated grade to {new_grade} for {student_name}")
             return jsonify({'message': 'Grade updated successfully'})
         
-        print(f"❌ No enrollment found for {student_name}")
+        print(f"No enrollment found for {student_name}")
         return jsonify({'error': 'Enrollment not found'}), 404
     
     elif request.method == 'DELETE':
@@ -465,17 +455,16 @@ def api_grade_student(student_name):
         if enrollment:
             enrollment.grade = None
             db.session.commit()
-            print(f"✅ Deleted grade for {student_name}")
+            print(f"Deleted grade for {student_name}")
             return jsonify({'message': 'Grade deleted successfully'})
         
-        print(f"❌ No enrollment found for {student_name}")
+        print(f"No enrollment found for {student_name}")
         return jsonify({'error': 'Enrollment not found'}), 404
     
-# ----- ADMIN COURSE MANAGEMENT API (used by admin.js Edit/Delete/Add) -----
+# ADMIN COURSE MANAGEMENT API (used by admin.js Edit/Delete/Add)
 
 
 def _course_to_dict(course: Course):
-    """Helper: serialize a Course with enrollment count."""
     enrollment_count = Enrollment.query.filter_by(course_id=course.id).count()
     return {
         "id": course.id,
@@ -488,13 +477,6 @@ def _course_to_dict(course: Course):
 
 @app.route("/api/admin/courses", methods=["GET", "POST"])
 def api_admin_courses():
-    """
-    Admin course list / create.
-
-    GET  -> return list of courses (for refreshing the table)
-    POST -> create a new course:
-            JSON: { "name": "...", "professor": "Dr. Hepworth", "capacity": 30 }
-    """
     # Ensure admin
     if "user_id" not in session or session.get("role") != "admin":
         return jsonify({"error": "Not authorized"}), 401
@@ -525,7 +507,7 @@ def api_admin_courses():
     db.session.add(course)
     db.session.commit()
 
-    print(f"✅ Admin created course {course.name} (ID: {course.id})")
+    print(f"Admin created course {course.name} (ID: {course.id})")
     return jsonify(_course_to_dict(course)), 201
 
 @app.route("/admin/course/<int:course_id>/edit")
@@ -539,15 +521,10 @@ def admin_edit_course(course_id):
 
     return render_template("admin_edit.html", course=course)
 
-
+# Admin Edit/Delete course
 @app.route("/api/admin/courses/<int:course_id>", methods=["PUT", "DELETE"])
 def api_admin_course_detail(course_id):
-    """
-    Admin edit / delete a course.
-
-    PUT    JSON: { "name": "...", "professor": "Professor Smith", "capacity": 40 }
-    DELETE -> removes course and its enrollments
-    """
+    
     if "user_id" not in session or session.get("role") != "admin":
         return jsonify({"error": "Not authorized"}), 401
 
@@ -573,44 +550,42 @@ def api_admin_course_detail(course_id):
             course.teacher_id = teacher.id
 
         db.session.commit()
-        print(f"✏️ Admin updated course {course.id}")
+        print(f"Admin updated course {course.id}")
         return jsonify(_course_to_dict(course))
 
     # DELETE
     Enrollment.query.filter_by(course_id=course.id).delete()
     db.session.delete(course)
     db.session.commit()
-    print(f"🗑️ Admin deleted course {course_id}")
+    print(f"Admin deleted course {course_id}")
     return jsonify({"message": "Course deleted"})
 
 
 # ADMIN WORK
 @app.route('/admin_logout')
 def admin_logout():
-    session.pop('role', None)        # Remove role info
-    session.pop('user_id', None)     # Remove user info
-    return redirect(url_for('admin_login'))  # Redirect to login page
+    session.pop('role', None)
+    session.pop('user_id', None)
+    return redirect(url_for('admin_login'))
 
 
-# ========== UTILITY ROUTES ==========
+# Logout
 
 @app.route('/logout')
 def logout():
-    """Logout all user types"""
     user_info = f"{session.get('user_name', 'Unknown')} ({session.get('role', 'Unknown')})"
     session.clear()
-    print(f"🚪 User logged out: {user_info}")
+    print(f"User logged out: {user_info}")
     return redirect(url_for('student_login'))
 
-# ========== APPLICATION STARTUP ==========
+# APPLICATION STARTUP
 
 if __name__ == '__main__':
     
-    print("\n🎓 ACME University Web App Starting...")
-    print("📍 Server running at: http://localhost:5000")
-    print("\n📋 Available Logins:")
-    print("   Student: cnorris@student.com / password")
+    print("\nExample Logins:")
+    print("   Student: jsantos@student.com / password")
     print("   Teacher: ahepworth@teacher.com / password")
     print("   Admin: admin / admin123")
+    print("")
     
     app.run(debug=True, port=5000)
