@@ -248,30 +248,15 @@ def view_course(course_id):
 
 @app.route("/admin/dashboard")
 def admin_dashboard():
-    """Admin dashboard using your admin_dashboard.html"""
-    # Check if user is logged in as admin
     if "user_id" not in session or session.get("role") != "admin":
-        return redirect(url_for("admin_login"))
+        return redirect(url_for("login"))
 
-    # Get all courses with enrollment counts
-    courses = Course.query.all()
-    course_data = []
+    classes = Course.query.options(
+        db.joinedload(Course.teacher),
+        db.joinedload(Course.enrollments).joinedload(Enrollment.student)
+    ).all()
 
-    for course in courses:
-        enrollment_count = Enrollment.query.filter_by(course_id=course.id).count()
-        course_data.append(
-            {
-                "id": course.id,
-                "name": course.name,
-                "professor": course.teacher.name,
-                "students": enrollment_count,
-                "capacity": course.capacity,
-            }
-        )
-
-    print(f"👤 Admin dashboard loaded with {len(course_data)} courses")
-
-    return render_template("admin_dashboard.html", classes=course_data)
+    return render_template("admin_dashboard.html", classes=classes)
 
 @app.route("/admin/add", methods=["GET", "POST"])
 def admin_add_class():
@@ -561,6 +546,17 @@ def api_admin_courses():
 
     print(f"✅ Admin created course {course.name} (ID: {course.id})")
     return jsonify(_course_to_dict(course)), 201
+
+@app.route("/admin/course/<int:course_id>/edit")
+def admin_edit_course(course_id):
+    # Get the course
+    course = Course.query.get_or_404(course_id)
+    
+    # Make sure course has a list of enrollments for the template
+    enrollments = Enrollment.query.filter_by(course_id=course_id).join(Student).all()
+    course.enrollments = enrollments  # attach it dynamically
+
+    return render_template("admin_edit.html", course=course)
 
 
 @app.route("/api/admin/courses/<int:course_id>", methods=["PUT", "DELETE"])

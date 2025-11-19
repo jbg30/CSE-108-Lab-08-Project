@@ -1,3 +1,4 @@
+<!-- templates/admin_dashboard.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -10,7 +11,7 @@
         rel="stylesheet"
     >
 
-    <!-- Your custom CSS (Flask-friendly path) -->
+    <!-- Custom CSS -->
     <link
         rel="stylesheet"
         href="{{ url_for('static', filename='css/style.css') }}"
@@ -25,6 +26,7 @@
         <tr>
             <th>Class Name</th>
             <th>Professor</th>
+            <th>Capacity</th>
             <th>Students Enrolled</th>
             <th>Actions</th>
         </tr>
@@ -33,44 +35,40 @@
         {% for c in classes %}
             <tr>
                 <td>{{ c.name }}</td>
-                <td>{{ c.professor }}</td>
-                <td>{{ c.students }}</td>
+                <td>{{ c.teacher.name }}</td>
+                <td>{{ c.capacity }}</td>
+                <td>{{ c.enrollments|length }}</td>
                 <td>
-                    <!-- Buttons handled by admin.js -->
-                    <button
-                        type="button"
-                        class="btn btn-warning btn-sm edit-btn"
-                        data-course-id="{{ c.id }}"
-                    >
+                    <!-- Link to the edit page -->
+                    <a href="{{ url_for('admin_edit_course', course_id=c.id) }}"
+                       class="btn btn-warning btn-sm">
                         Edit
-                    </button>
-                    <button
-                        type="button"
-                        class="btn btn-danger btn-sm delete-btn"
-                        data-course-id="{{ c.id }}"
-                    >
+                    </a>
+
+                    <!-- Delete button handled via JS -->
+                    <button type="button"
+                            class="btn btn-danger btn-sm delete-btn"
+                            data-course-id="{{ c.id }}">
                         Delete
                     </button>
                 </td>
             </tr>
         {% endfor %}
         </tbody>
-        ...
     </table>
 
-    <!-- Link to the add-class form -->
-    <a
-        href="{{ url_for('admin_add_class') }}"
-        class="btn btn-success mt-3"
-    >
+            <button onclick="logoutAdmin()" class="btn btn-secondary">Logout</button>
+
+    <!-- Link to add a new class -->
+    <a href="{{ url_for('admin_add_class') }}" class="btn btn-success mt-3">
         Add New Class
     </a>
 </div>
 
-<!-- Bootstrap JS (optional, for modals etc.) -->
+<!-- Bootstrap JS (optional) -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
-<!-- Admin dashboard logic -->
+<!-- Admin JS -->
 <script src="{{ url_for('static', filename='js/admin.js') }}"></script>
 </body>
 </html>
