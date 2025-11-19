@@ -41,6 +41,9 @@ class Student(db.Model):
     def check_password(self, password):
         """Verify the provided password against the stored hash"""
         return check_password_hash(self.password_hash, password)
+    
+    def __str__(self):
+        return self.name
 
 class Teacher(db.Model):
     """
@@ -62,6 +65,9 @@ class Teacher(db.Model):
     
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)
+    
+    def __str__(self):
+        return self.name
 
 class Admin(db.Model):
     """
@@ -91,15 +97,17 @@ class Course(db.Model):
     # Course name (e.g., "CSE 162")
     name = db.Column(db.String(100), nullable=False)
     # Course description
-    description = db.Column(db.Text)
-    # Maximum number of students allowed
+    description = db.Column(db.Text, nullable=True)  # Added description field
+    # Course capacity
     capacity = db.Column(db.Integer, nullable=False, default=30)
-    
     # Foreign key linking to the teacher who teaches this course
     teacher_id = db.Column(db.Integer, db.ForeignKey('teachers.id'), nullable=False)
     
     # Relationship with enrollments - allows access to students in this course
     enrollments = db.relationship('Enrollment', backref='course', lazy=True)
+
+    def __str__(self):
+        return self.name
 
 class Enrollment(db.Model):
     """
@@ -120,3 +128,5 @@ class Enrollment(db.Model):
     __table_args__ = (
         db.UniqueConstraint('student_id', 'course_id', name='unique_enrollment'),
     )
+    
+

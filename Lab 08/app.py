@@ -1,5 +1,7 @@
 from flask import Flask, render_template, request, jsonify, session, redirect, url_for
 from models import db, Student, Teacher, Admin, Course, Enrollment
+from admin import setup_admin
+from flask import redirect, url_for, session
 import os
 
 app = Flask(__name__)
@@ -8,66 +10,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///university.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
-
-def create_sample_data():
-    """Create sample data that matches your frontend expectations"""
-    with app.app_context():
-        db.create_all()
-        
-        # Only create sample data if no students exist
-        if not Student.query.first():
-            print("🔄 Creating sample data...")
-            
-            # Create students from your frontend
-            student1 = Student(name="Chuck Norris", email="cnorris@student.com")
-            student1.set_password("password")
-            
-            student2 = Student(name="Mindy Smith", email="msmith@student.com") 
-            student2.set_password("password")
-            
-            # Create teachers from your frontend
-            teacher1 = Teacher(name="Dr. Hepworth", email="ahepworth@teacher.com")
-            teacher1.set_password("password")
-            
-            teacher2 = Teacher(name="Professor Smith", email="smith@teacher.com")
-            teacher2.set_password("password")
-            
-            # Create admin
-            admin1 = Admin(username="admin")
-            admin1.set_password("admin123")
-            
-            # Add users first and commit to get their IDs
-            db.session.add_all([student1, student2, teacher1, teacher2, admin1])
-            db.session.commit()
-            
-            print(f"✅ Users created. Teacher IDs: {teacher1.id}, {teacher2.id}")
-            
-            # Now create courses with the actual teacher objects
-            course1 = Course(name="Intro to Web", description="Web Development", capacity=30, teacher_id=teacher1.id)
-            course2 = Course(name="Data Structures", description="Algorithms", capacity=25, teacher_id=teacher2.id)
-            course3 = Course(name="Math 101", description="Mathematics", capacity=25, teacher_id=teacher1.id)
-            course4 = Course(name="History 201", description="World History", capacity=20, teacher_id=teacher2.id)
-            
-            db.session.add_all([course1, course2, course3, course4])
-            db.session.commit()
-            
-            # Create sample enrollments
-            enrollment1 = Enrollment(student_id=student1.id, course_id=course1.id, grade=85.5)
-            enrollment2 = Enrollment(student_id=student1.id, course_id=course2.id, grade=92.0)
-            enrollment3 = Enrollment(student_id=student2.id, course_id=course3.id, grade=88.0)
-            db.session.add_all([enrollment1, enrollment2, enrollment3])
-            db.session.commit()
-            
-            print("✅ Sample data created successfully!")
-            print("📧 Student: cnorris@student.com / password")
-            print("📧 Teacher: ahepworth@teacher.com / password") 
-            print("👤 Admin: admin / admin123")
-            
-            # Verify data was created
-            print(f"📊 Students: {Student.query.count()}, Teachers: {Teacher.query.count()}, Courses: {Course.query.count()}, Enrollments: {Enrollment.query.count()}")
-        else:
-            print("✅ Database already has data")
-            print(f"📊 Current counts - Students: {Student.query.count()}, Teachers: {Teacher.query.count()}, Courses: {Course.query.count()}, Enrollments: {Enrollment.query.count()}")
+setup_admin(app)
 
 # ========== AUTHENTICATION ROUTES ==========
 
@@ -641,6 +584,12 @@ def api_admin_course_detail(course_id):
     return jsonify({"message": "Course deleted"})
 
 
+# ADMIN WORK
+@app.route('/admin_logout')
+def admin_logout():
+    session.pop('role', None)        # Remove role info
+    session.pop('user_id', None)     # Remove user info
+    return redirect(url_for('admin_login'))  # Redirect to login page
 
 
 # ========== UTILITY ROUTES ==========
@@ -653,98 +602,9 @@ def logout():
     print(f"🚪 User logged out: {user_info}")
     return redirect(url_for('student_login'))
 
-@app.route('/debug/courses')
-def debug_courses():
-    """Debug route to check courses in database"""
-    courses = Course.query.all()
-    result = "<h2>Courses in Database:</h2><ul>"
-    for course in courses:
-        enrollment_count = Enrollment.query.filter_by(course_id=course.id).count()
-        teacher_name = course.teacher.name if course.teacher else "No Teacher"
-        result += f"<li>{course.name} - {teacher_name} - {enrollment_count}/{course.capacity} (ID: {course.id})</li>"
-    result += f"</ul><p>Total courses: {len(courses)}</p>"
-    
-    # Add students info
-    students = Student.query.all()
-    result += "<h3>Students:</h3><ul>"
-    for student in students:
-        enrollments = Enrollment.query.filter_by(student_id=student.id).count()
-        result += f"<li>{student.name} - {student.email} (Enrollments: {enrollments})</li>"
-    result += f"</ul><p>Total students: {len(students)}</p>"
-    
-    return result
-
-@app.route('/debug/registration-data')
-def debug_registration_data():
-    """Debug route to see exactly what data is being passed to registration page"""
-    if 'user_id' not in session or session.get('role') != 'student':
-        return jsonify({'error': 'Not logged in as student'})
-    
-    courses = Course.query.all()
-    course_data = []
-    
-    for course in courses:
-        enrollment_count = Enrollment.query.filter_by(course_id=course.id).count()
-        course_info = {
-            'id': course.id,
-            'name': course.name,
-            'professor': course.teacher.name,
-            'enrolled': enrollment_count,
-            'capacity': course.capacity
-        }
-        course_data.append(course_info)
-        print(f"📖 Course: {course_info}")  # This will print to console
-    
-    return jsonify(course_data)
-
-@app.route('/debug')
-def debug_info():
-    """Debug page to check database state"""
-    students = Student.query.all()
-    teachers = Teacher.query.all()
-    courses = Course.query.all()
-    enrollments = Enrollment.query.all()
-    
-    info = f"""
-    <h2>Debug Information</h2>
-    <p>Students: {len(students)}</p>
-    <p>Teachers: {len(teachers)}</p>
-    <p>Courses: {len(courses)}</p>
-    <p>Enrollments: {len(enrollments)}</p>
-    
-    <h3>Students:</h3>
-    <ul>
-    {"".join(f'<li>{s.name} - {s.email} (ID: {s.id})</li>' for s in students)}
-    </ul>
-    
-    <h3>Teachers:</h3>
-    <ul>
-    {"".join(f'<li>{t.name} - {t.email} (ID: {t.id})</li>' for t in teachers)}
-    </ul>
-    
-    <h3>Courses:</h3>
-    <ul>
-    {"".join(f'<li>{c.name} - Teacher: {c.teacher.name} (ID: {c.id})</li>' for c in courses)}
-    </ul>
-    
-    <h3>Enrollments:</h3>
-    <ul>
-    {"".join(f'<li>Student {e.student_id} in Course {e.course_id} - Grade: {e.grade}</li>' for e in enrollments)}
-    </ul>
-    
-    <h3>Session Info:</h3>
-    <pre>{dict(session)}</pre>
-    
-    <p><a href="/">Home</a> | <a href="/debug/courses">Course Details</a></p>
-    """
-    return info
-
 # ========== APPLICATION STARTUP ==========
 
 if __name__ == '__main__':
-    with app.app_context():
-        # Create database and sample data
-        create_sample_data()
     
     print("\n🎓 ACME University Web App Starting...")
     print("📍 Server running at: http://localhost:5000")
@@ -752,9 +612,5 @@ if __name__ == '__main__':
     print("   Student: cnorris@student.com / password")
     print("   Teacher: ahepworth@teacher.com / password")
     print("   Admin: admin / admin123")
-    print("\n🐛 Debug Routes:")
-    print("   http://localhost:5000/debug - Full database info")
-    print("   http://localhost:5000/debug/courses - Course details")
-    print("\n🚀 Ready to go!")
     
     app.run(debug=True, port=5000)
