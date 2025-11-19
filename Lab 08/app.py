@@ -22,7 +22,7 @@ def create_sample_data():
             student1 = Student(name="Chuck Norris", email="cnorris@student.com")
             student1.set_password("password")
             
-            student2 = Student(name="Mindy Smith", email="mindy@student.com") 
+            student2 = Student(name="Mindy Smith", email="msmith@student.com") 
             student2.set_password("password")
             
             # Create teachers from your frontend
@@ -103,7 +103,7 @@ def student_login():
 
 @app.route('/teacher/login', methods=['GET', 'POST'])
 def teacher_login():
-    """Teacher login using your teacher_login.html"""
+    """Teacher login using your professor_login.html"""
     if request.method == 'POST':
         email = request.form.get('username')
         password = request.form.get('password')
@@ -121,9 +121,9 @@ def teacher_login():
             return redirect(url_for('teacher_dashboard'))
         else:
             print("❌ Teacher login failed")
-            return render_template('teacher_login.html', error="Invalid email or password")
+            return render_template('professor_login.html', error="Invalid email or password")
     
-    return render_template('teacher_login.html')
+    return render_template('professor_login.html')
 
 @app.route('/admin/login', methods=['GET', 'POST'])
 def admin_login():
@@ -147,6 +147,44 @@ def admin_login():
             return render_template('admin_login.html', error="Invalid username or password")
     
     return render_template('admin_login.html')
+
+# Update grade
+@app.route("/api/admin/enrollments/<int:enrollment_id>", methods=["PUT"])
+def admin_update_grade(enrollment_id):
+    data = request.json
+    new_grade = data.get("grade")
+
+    if new_grade is None:
+        return jsonify({"success": False, "error": "Grade not provided"}), 400
+
+    enrollment = Enrollment.query.get(enrollment_id)
+    if not enrollment:
+        return jsonify({"success": False, "error": "Enrollment not found"}), 404
+
+    enrollment.grade = new_grade
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "enrollment_id": enrollment.id,
+        "grade": enrollment.grade
+    })
+
+# Remove student
+@app.route("/api/admin/enrollments/<int:enrollment_id>", methods=["DELETE"])
+def admin_remove_student(enrollment_id):
+    enrollment = Enrollment.query.get(enrollment_id)
+    if not enrollment:
+        return jsonify({"success": False, "error": "Enrollment not found"}), 404
+
+    db.session.delete(enrollment)
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "enrollment_id": enrollment_id
+    })
+
 
 # ========== DASHBOARD ROUTES ==========
 
@@ -601,6 +639,8 @@ def api_admin_course_detail(course_id):
     db.session.commit()
     print(f"🗑️ Admin deleted course {course_id}")
     return jsonify({"message": "Course deleted"})
+
+
 
 
 # ========== UTILITY ROUTES ==========

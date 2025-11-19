@@ -27,47 +27,51 @@ document.addEventListener("DOMContentLoaded", () => {
       .catch((err) => console.error(err));
   });
 
-  // Update student grade
-  document.querySelectorAll(".update-grade").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const row = btn.closest("tr");
-      const enrollmentId = row.dataset.enrollmentId;
-      const grade = row.querySelector(".grade-input").value.trim();
+  // Event delegation for grade update and student removal
+  const table = document.querySelector("table.table");
+  if (table) {
+    table.addEventListener("click", (e) => {
+      const btn = e.target;
 
-      fetch(`/api/admin/enrollments/${enrollmentId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ grade }),
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          console.log(data);
-          alert("Grade updated!");
+      // Update grade
+      if (btn.classList.contains("update-grade")) {
+        const row = btn.closest("tr");
+        const enrollmentId = row.dataset.enrollmentId;
+        const grade = row.querySelector(".grade-input").value.trim();
+
+        fetch(`/api/admin/enrollments/${enrollmentId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ grade }),
         })
-        .catch((err) => console.error(err));
-    });
-  });
+          .then((res) => res.json())
+          .then((data) => {
+            console.log(data);
+            alert("Grade updated!");
+          })
+          .catch((err) => console.error(err));
+      }
 
-  // Remove student from course
-  document.querySelectorAll(".remove-student").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      if (!confirm("Are you sure you want to remove this student?")) return;
+      // Remove student
+      if (btn.classList.contains("remove-student")) {
+        if (!confirm("Are you sure you want to remove this student?")) return;
 
-      const row = btn.closest("tr");
-      const enrollmentId = row.dataset.enrollmentId;
+        const row = btn.closest("tr");
+        const enrollmentId = row.dataset.enrollmentId;
 
-      fetch(`/api/admin/enrollments/${enrollmentId}`, {
-        method: "DELETE",
-      })
-        .then((res) => res.json())
-        .then((data) => {
-          console.log(data);
-          alert("Student removed!");
-          row.remove();
+        fetch(`/api/admin/enrollments/${enrollmentId}`, {
+          method: "DELETE",
         })
-        .catch((err) => console.error(err));
+          .then((res) => res.json())
+          .then((data) => {
+            console.log(data);
+            alert("Student removed!");
+            row.remove();
+          })
+          .catch((err) => console.error(err));
+      }
     });
-  });
+  }
 });
 // Delete course
 
