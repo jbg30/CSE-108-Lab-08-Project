@@ -3,36 +3,74 @@
 <head>
     <meta charset="UTF-8">
     <title>Admin Dashboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="/static/css/style.css">
+
+    <!-- Bootstrap CSS -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <!-- Your custom CSS (Flask-friendly path) -->
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
 </head>
 <body>
 <div class="container mt-5">
     <h2>Admin Dashboard</h2>
+
     <table class="table table-hover mt-3">
         <thead>
-            <tr>
-                <th>Class Name</th>
-                <th>Professor</th>
-                <th>Students Enrolled</th>
-                <th>Actions</th>
-            </tr>
+        <tr>
+            <th>Class Name</th>
+            <th>Professor</th>
+            <th>Students Enrolled</th>
+            <th>Actions</th>
+        </tr>
         </thead>
         <tbody>
-            {% for class in classes %}
+        {% for c in classes %}
             <tr>
-                <td>{{ class.name }}</td>
-                <td>{{ class.professor }}</td>
-                <td>{{ class.students }}</td>
+                <td>{{ c.name }}</td>
+                <td>{{ c.professor }}</td>
+                <td>{{ c.students }}</td>
                 <td>
-                    <a href="/admin/edit/{{ class.id }}" class="btn btn-warning btn-sm">Edit</a>
-                    <a href="/admin/delete/{{ class.id }}" class="btn btn-danger btn-sm">Delete</a>
+                    <!-- Buttons handled by admin.js -->
+                    <button
+                        type="button"
+                        class="btn btn-warning btn-sm edit-btn"
+                        data-course-id="{{ c.id }}"
+                    >
+                        Edit
+                    </button>
+                    <button
+                        type="button"
+                        class="btn btn-danger btn-sm delete-btn"
+                        data-course-id="{{ c.id }}"
+                    >
+                        Delete
+                    </button>
                 </td>
             </tr>
-            {% endfor %}
+        {% endfor %}
         </tbody>
+        ...
     </table>
-    <a href="/admin/add" class="btn btn-success mt-3">Add New Class</a>
+
+    <!-- Link to the add-class form -->
+    <a
+        href="{{ url_for('admin_add_class') }}"
+        class="btn btn-success mt-3"
+    >
+        Add New Class
+    </a>
 </div>
+
+<!-- Bootstrap JS (optional, for modals etc.) -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Admin dashboard logic -->
+<script src="{{ url_for('static', filename='js/admin.js') }}"></script>
 </body>
 </html>
