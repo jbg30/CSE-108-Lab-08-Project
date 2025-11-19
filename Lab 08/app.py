@@ -246,30 +246,78 @@ def view_course(course_id):
         students=student_data
     )
 
-@app.route('/admin/dashboard')
+@app.route("/admin/dashboard")
 def admin_dashboard():
     """Admin dashboard using your admin_dashboard.html"""
     # Check if user is logged in as admin
-    if 'user_id' not in session or session.get('role') != 'admin':
-        return redirect(url_for('admin_login'))
-    
+    if "user_id" not in session or session.get("role") != "admin":
+        return redirect(url_for("admin_login"))
+
     # Get all courses with enrollment counts
     courses = Course.query.all()
     course_data = []
-    
+
     for course in courses:
         enrollment_count = Enrollment.query.filter_by(course_id=course.id).count()
-        course_data.append({
-            'id': course.id,
-            'name': course.name,
-            'professor': course.teacher.name,
-            'students': enrollment_count,
-            'capacity': course.capacity
-        })
-    
+        course_data.append(
+            {
+                "id": course.id,
+                "name": course.name,
+                "professor": course.teacher.name,
+                "students": enrollment_count,
+                "capacity": course.capacity,
+            }
+        )
+
     print(f"👤 Admin dashboard loaded with {len(course_data)} courses")
-    
-    return render_template('admin_dashboard.html', classes=course_data)
+
+    return render_template("admin_dashboard.html", classes=course_data)
+
+@app.route("/admin/add", methods=["GET", "POST"])
+def admin_add_class():
+    """Form to add a new course (used by 'Add New Class' button)."""
+    # Only admins can access this
+    if "user_id" not in session or session.get("role") != "admin":
+        return redirect(url_for("admin_login"))
+
+    if request.method == "POST":
+        name = request.form.get("name")
+        description = request.form.get("description") or ""
+        capacity = request.form.get("capacity")
+        teacher_id = request.form.get("teacher_id")
+
+        # Basic validation
+        if not name or not capacity or not teacher_id:
+            error = "All fields are required."
+            teachers = Teacher.query.all()
+            return render_template(
+                "admin_add_class.html", teachers=teachers, error=error
+            )
+
+        try:
+            capacity = int(capacity)
+        except ValueError:
+            error = "Capacity must be a number."
+            teachers = Teacher.query.all()
+            return render_template(
+                "admin_add_class.html", teachers=teachers, error=error
+            )
+
+        new_course = Course(
+            name=name,
+            description=description,
+            capacity=capacity,
+            teacher_id=int(teacher_id),
+        )
+        db.session.add(new_course)
+        db.session.commit()
+
+        print(f"✅ Admin added new class: {name}")
+        return redirect(url_for("admin_dashboard"))
+
+    # GET: show the form with list of teachers
+    teachers = Teacher.query.all()
+    return render_template("admin_add_class.html", teachers=teachers)
 
 @app.route('/student/register')
 def student_register():
@@ -456,6 +504,108 @@ def api_grade_student(student_name):
         
         print(f"❌ No enrollment found for {student_name}")
         return jsonify({'error': 'Enrollment not found'}), 404
+    
+# ----- ADMIN COURSE MANAGEMENT API (used by admin.js Edit/Delete/Add) -----
+
+
+def _course_to_dict(course: Course):
+    """Helper: serialize a Course with enrollment count."""
+    enrollment_count = Enrollment.query.filter_by(course_id=course.id).count()
+    return {
+        "id": course.id,
+        "name": course.name,
+        "professor": course.teacher.name if course.teacher else "No Teacher",
+        "students": enrollment_count,
+        "capacity": course.capacity,
+    }
+
+
+@app.route("/api/admin/courses", methods=["GET", "POST"])
+def api_admin_courses():
+    """
+    Admin course list / create.
+
+    GET  -> return list of courses (for refreshing the table)
+    POST -> create a new course:
+            JSON: { "name": "...", "professor": "Dr. Hepworth", "capacity": 30 }
+    """
+    # Ensure admin
+    if "user_id" not in session or session.get("role") != "admin":
+        return jsonify({"error": "Not authorized"}), 401
+
+    if request.method == "GET":
+        courses = Course.query.all()
+        return jsonify([_course_to_dict(c) for c in courses])
+
+    # POST - create new course
+    data = request.json or {}
+    name = data.get("name")
+    professor_name = data.get("professor")
+    capacity = data.get("capacity", 30)
+
+    if not name or not professor_name:
+        return jsonify({"error": "Name and professor are required"}), 400
+
+    teacher = Teacher.query.filter_by(name=professor_name).first()
+    if not teacher:
+        return jsonify({"error": f"Teacher '{professor_name}' not found"}), 404
+
+    course = Course(
+        name=name,
+        description=data.get("description", ""),
+        capacity=capacity,
+        teacher_id=teacher.id,
+    )
+    db.session.add(course)
+    db.session.commit()
+
+    print(f"✅ Admin created course {course.name} (ID: {course.id})")
+    return jsonify(_course_to_dict(course)), 201
+
+
+@app.route("/api/admin/courses/<int:course_id>", methods=["PUT", "DELETE"])
+def api_admin_course_detail(course_id):
+    """
+    Admin edit / delete a course.
+
+    PUT    JSON: { "name": "...", "professor": "Professor Smith", "capacity": 40 }
+    DELETE -> removes course and its enrollments
+    """
+    if "user_id" not in session or session.get("role") != "admin":
+        return jsonify({"error": "Not authorized"}), 401
+
+    course = Course.query.get(course_id)
+    if not course:
+        return jsonify({"error": "Course not found"}), 404
+
+    if request.method == "PUT":
+        data = request.json or {}
+        name = data.get("name")
+        professor_name = data.get("professor")
+        capacity = data.get("capacity")
+
+        if name:
+            course.name = name
+        if capacity is not None:
+            course.capacity = capacity
+
+        if professor_name:
+            teacher = Teacher.query.filter_by(name=professor_name).first()
+            if not teacher:
+                return jsonify({"error": f"Teacher '{professor_name}' not found"}), 404
+            course.teacher_id = teacher.id
+
+        db.session.commit()
+        print(f"✏️ Admin updated course {course.id}")
+        return jsonify(_course_to_dict(course))
+
+    # DELETE
+    Enrollment.query.filter_by(course_id=course.id).delete()
+    db.session.delete(course)
+    db.session.commit()
+    print(f"🗑️ Admin deleted course {course_id}")
+    return jsonify({"message": "Course deleted"})
+
 
 # ========== UTILITY ROUTES ==========
 
